@@ -94,7 +94,7 @@ $sql_count = str_replace("SELECT DATE_FORMAT(facturas.`Fecha_facturacion`,'%%d/%
     DATE_FORMAT(DATE_ADD(Fecha_facturacion,INTERVAL 1 DAY),'%d/%m/%Y') AS fecha_vuelo, 
     facturas.invoice, facturas.`NUM_PACK`, 
     CONCAT('CE',clientes.tar) AS cod_ventas, 
-    clientes.id_nif AS cod_contabilidad, 
+    '' AS cod_contabilidad, 
     clientes.`CCONSIGNA` AS cliente,
     clientes.`CNOMBRE` AS subcliente, 
     facturas.`tipoventa`, 
@@ -233,15 +233,34 @@ $grafico_manifiesto = generarGraficosData($db, $sql_base, $params, 'fue_manifies
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
+        #loading-indicator .spinner {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem; /* Space between spinner and text */
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #loading-indicator .loading-content { /* Container for centering spinner and text vertically */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
         .chart-container {
             position: relative;
-            width: 100%;
-            transition: all 0.3s ease;
+            width: 100%; /* Ensure it takes full width of its parent box */
+            transition: height 0.3s ease; /* Smooth height transition */
         }
-        
-        .chart-size-small { height: 200px; }
-        .chart-size-medium { height: 300px; }
-        .chart-size-large { height: 400px; }
+        .chart-size-small { height: 250px; } /* Adjusted for better visibility */
+        .chart-size-medium { height: 350px; } /* Adjusted for better visibility */
+        .chart-size-large { height: 450px; } /* Adjusted for better visibility */
         
         .chart-controls {
             margin-bottom: 1rem;
@@ -277,6 +296,12 @@ $grafico_manifiesto = generarGraficosData($db, $sql_base, $params, 'fue_manifies
 	
 </head>
 <body>
+    <div id="loading-indicator" class="is-hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.85); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p style="font-size: 1.5rem; color: #333;">Cargando datos, por favor espere...</p>
+        </div>
+    </div>
     <div class="container is-fluid">
         <div class="section">
             <h1 class="title">Sistema de Reportes de Facturas</h1>
@@ -382,13 +407,59 @@ $grafico_manifiesto = generarGraficosData($db, $sql_base, $params, 'fue_manifies
                 <div class="column">
                     <div class="box">
                         <h3 class="subtitle">Tallos por Mercado (CZONA)</h3>
-                        <canvas id="graficoCzona" width="200" height="100"></canvas>
+                        <div class="chart-controls field is-grouped is-grouped-right mb-0">
+                            <label class="label control-label mr-2">Tamaño:</label>
+                            <div class="control">
+                                <div class="buttons has-addons">
+                                    <button class="button is-small chart-size-btn" data-target="graficoCzona" data-size="small">Pequeño</button>
+                                    <button class="button is-small chart-size-btn is-selected" data-target="graficoCzona" data-size="medium">Mediano</button>
+                                    <button class="button is-small chart-size-btn" data-target="graficoCzona" data-size="large">Grande</button>
+                                </div>
+                            </div>
+                            <label class="label control-label mr-2 ml-3">Tipo:</label>
+                            <div class="control">
+                                <div class="select is-small">
+                                    <select class="chart-type-select" data-target="graficoCzona">
+                                        <option value="pie" selected>Circular</option>
+                                        <option value="doughnut">Dona</option>
+                                        <option value="bar">Barras</option>
+                                        <option value="line">Lineal</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-container chart-size-medium mt-3">
+                            <canvas id="graficoCzona"></canvas>
+                        </div>
                     </div>
                 </div>
                 <div class="column">
                     <div class="box">
                         <h3 class="subtitle">Tallos por Cliente</h3>
-                        <canvas id="graficoCliente" width="200" height="100"></canvas>
+                        <div class="chart-controls field is-grouped is-grouped-right mb-0">
+                            <label class="label control-label mr-2">Tamaño:</label>
+                            <div class="control">
+                                <div class="buttons has-addons">
+                                    <button class="button is-small chart-size-btn" data-target="graficoCliente" data-size="small">Pequeño</button>
+                                    <button class="button is-small chart-size-btn is-selected" data-target="graficoCliente" data-size="medium">Mediano</button>
+                                    <button class="button is-small chart-size-btn" data-target="graficoCliente" data-size="large">Grande</button>
+                                </div>
+                            </div>
+                            <label class="label control-label mr-2 ml-3">Tipo:</label>
+                            <div class="control">
+                                <div class="select is-small">
+                                    <select class="chart-type-select" data-target="graficoCliente">
+                                        <option value="pie" selected>Circular</option>
+                                        <option value="doughnut">Dona</option>
+                                        <option value="bar">Barras</option>
+                                        <option value="line">Lineal</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-container chart-size-medium mt-3">
+                            <canvas id="graficoCliente"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -397,13 +468,59 @@ $grafico_manifiesto = generarGraficosData($db, $sql_base, $params, 'fue_manifies
                 <div class="column">
                     <div class="box">
                         <h3 class="subtitle">Valor USD por Mercado</h3>
-                        <canvas id="graficoValorCzona" width="200" height="100"></canvas>
+                        <div class="chart-controls field is-grouped is-grouped-right mb-0">
+                            <label class="label control-label mr-2">Tamaño:</label>
+                            <div class="control">
+                                <div class="buttons has-addons">
+                                    <button class="button is-small chart-size-btn" data-target="graficoValorCzona" data-size="small">Pequeño</button>
+                                    <button class="button is-small chart-size-btn is-selected" data-target="graficoValorCzona" data-size="medium">Mediano</button>
+                                    <button class="button is-small chart-size-btn" data-target="graficoValorCzona" data-size="large">Grande</button>
+                                </div>
+                            </div>
+                            <label class="label control-label mr-2 ml-3">Tipo:</label>
+                            <div class="control">
+                                <div class="select is-small">
+                                    <select class="chart-type-select" data-target="graficoValorCzona">
+                                        <option value="pie" selected>Circular</option>
+                                        <option value="doughnut">Dona</option>
+                                        <option value="bar">Barras</option>
+                                        <option value="line">Lineal</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-container chart-size-medium mt-3">
+                            <canvas id="graficoValorCzona"></canvas>
+                        </div>
                     </div>
                 </div>
                 <div class="column">
                     <div class="box">
                         <h3 class="subtitle">Tallos por DAE</h3>
-                        <canvas id="graficoManifiesto" width="200" height="100"></canvas>
+                        <div class="chart-controls field is-grouped is-grouped-right mb-0">
+                            <label class="label control-label mr-2">Tamaño:</label>
+                            <div class="control">
+                                <div class="buttons has-addons">
+                                    <button class="button is-small chart-size-btn" data-target="graficoManifiesto" data-size="small">Pequeño</button>
+                                    <button class="button is-small chart-size-btn is-selected" data-target="graficoManifiesto" data-size="medium">Mediano</button>
+                                    <button class="button is-small chart-size-btn" data-target="graficoManifiesto" data-size="large">Grande</button>
+                                </div>
+                            </div>
+                            <label class="label control-label mr-2 ml-3">Tipo:</label>
+                            <div class="control">
+                                <div class="select is-small">
+                                    <select class="chart-type-select" data-target="graficoManifiesto">
+                                        <option value="pie" selected>Circular</option>
+                                        <option value="doughnut">Dona</option>
+                                        <option value="bar">Barras</option>
+                                        <option value="line">Lineal</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-container chart-size-medium mt-3">
+                            <canvas id="graficoManifiesto"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -605,7 +722,28 @@ $grafico_manifiesto = generarGraficosData($db, $sql_base, $params, 'fue_manifies
     </div>
 
     <script>
+        const loadingIndicator = document.getElementById('loading-indicator');
 
+        function showLoadingIndicator() {
+            if (loadingIndicator) {
+                loadingIndicator.classList.remove('is-hidden');
+            }
+        }
+
+        // Attach to the main filter form submission
+        // This form wraps all filters and the records-per-page dropdown
+        const filterForm = document.querySelector('div.box > form[method="POST"]'); 
+        if (filterForm) {
+            filterForm.addEventListener('submit', showLoadingIndicator);
+        }
+
+        // Attach to pagination forms
+        // There are two such forms, one for top pagination, one for bottom.
+        const paginationForms = document.querySelectorAll('nav.pagination form[method="POST"]');
+        paginationForms.forEach(form => {
+            form.addEventListener('submit', showLoadingIndicator);
+        });
+        
 		// Variables globales para los gráficos
         let charts = {
             czona: null,
@@ -619,91 +757,156 @@ $grafico_manifiesto = generarGraficosData($db, $sql_base, $params, 'fue_manifies
         const dataCliente = <?= json_encode($grafico_cconsigna) ?>;
         const dataManifiesto = <?= json_encode($grafico_manifiesto) ?>;
 
-        // Función para crear gráficos de pastel
-        function crearGraficoPastel(canvasId, data, titulo, campo) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            const labels = Object.keys(data).slice(0, 10); // Limitar a 10 elementos
-            const valores = labels.map(key => data[key][campo]);
-            
-            // Paleta de colores de rojo a verde (10 tonos)
-            const colores = [
-                '#DC2626', // Rojo intenso
-                '#EF4444', // Rojo
-                '#F87171', // Rojo claro
-                '#FB923C', // Naranja
-                '#FBBF24', // Amarillo-naranja
-                '#FDE047', // Amarillo
-                '#A3E635', // Lima
-                '#65A30D', // Verde lima
-                '#16A34A', // Verde
-                '#15803D'  // Verde oscuro
-            ];
+        // Paleta de colores comunes
+        const chartColors = [
+            '#DC2626', '#EF4444', '#F87171', '#FB923C', '#FBBF24',
+            '#FDE047', '#A3E635', '#65A30D', '#16A34A', '#15803D'
+        ];
 
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: valores,
-                        backgroundColor: colores,
-                        borderWidth: 2,
-                        borderColor: '#fff',
-                        hoverBorderWidth: 3,
-                        hoverBorderColor: '#374151'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: titulo,
-                            font: {
-                                size: 16,
-                                weight: 'bold'
-                            }
-                        },
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 15,
-                                usePointStyle: true,
-                                font: {
-                                    size: 12
-                                }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed;
+        function actualizarOGenerarGrafico(canvasId, chartType, sourceData, titulo, campoY) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const chartKey = canvasId.replace('grafico', '').toLowerCase();
+
+            // Destruir gráfico existente si existe
+            if (charts[chartKey]) {
+                charts[chartKey].destroy();
+            }
+
+            const labels = Object.keys(sourceData).slice(0, 10);
+            const valores = labels.map(key => sourceData[key][campoY]);
+
+            let chartDataConfig = {
+                labels: labels,
+                datasets: [{
+                    label: titulo, // Usado en tooltips y leyendas para bar/line
+                    data: valores,
+                    backgroundColor: chartColors, // Para pie, doughnut, bar
+                    borderColor: chartColors[0], // Para line
+                    borderWidth: (chartType === 'line' || chartType === 'bar') ? 2 : 1, // 1px for pie/doughnut, 2px for line/bar
+                    hoverBorderWidth: 3, // Keep hover distinct
+                    hoverBorderColor: '#374151',
+                    fill: chartType === 'line' ? false : true, // No rellenar área bajo la línea por defecto
+                    tension: chartType === 'line' ? 0.1 : 0 // Curvatura de la línea
+                }]
+            };
+            
+            if (chartType === 'bar' || chartType === 'line') {
+                 // Para bar y line, es común tener un color por dataset, no por cada valor.
+                 // Si se desea un color por barra, se mantiene la lista de colores en backgroundColor.
+                 // Para line chart, usualmente se usa borderColor para el color de la línea.
+                chartDataConfig.datasets[0].backgroundColor = chartType === 'bar' ? chartColors : chartColors[0]; // Un color para line, muchos para bar
+                chartDataConfig.datasets[0].borderColor = chartType === 'line' ? chartColors[0] : chartColors; // Un color para line, muchos para bar
+            }
+
+
+            let options = {
+                responsive: true,
+                maintainAspectRatio: false, // Importante para que el chart-container controle la altura sin distorsión
+                plugins: {
+                    title: {
+                        display: true,
+                        text: titulo,
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        position: (chartType === 'pie' || chartType === 'doughnut') ? 'bottom' : 'top',
+                        labels: { padding: 15, usePointStyle: true, font: { size: 12 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                let value = context.parsed.y !== undefined ? context.parsed.y : context.parsed;
+                                
+                                if (chartType === 'pie' || chartType === 'doughnut') {
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = ((value / total) * 100).toFixed(1);
-                                    
-                                    if (campo === 'valor') {
-                                        return `${label}: ${value.toLocaleString()} (${percentage}%)`;
-                                    } else {
-                                        return `${label}: ${value.toLocaleString()} (${percentage}%)`;
-                                    }
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return `${label}: ${value.toLocaleString()} (${percentage}%)`;
                                 }
+                                return `${label}: ${value.toLocaleString()}`;
                             }
                         }
-                    },
-                    animation: {
-                        animateRotate: true,
-                        animateScale: true,
-                        duration: 1000
                     }
+                },
+                animation: {
+                    duration: 1000 // Mantener animación general
                 }
+            };
+
+            if (chartType === 'bar' || chartType === 'line') {
+                options.scales = {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: campoY.toUpperCase() }
+                    },
+                    x: {
+                        title: { display: false, text: 'Categorías' } // Título X puede ser redundante si las etiquetas son claras
+                    }
+                };
+            } else {
+                delete options.scales; // Pie y Doughnut no usan escalas
+            }
+            
+            charts[chartKey] = new Chart(ctx, {
+                type: chartType,
+                data: chartDataConfig,
+                options: options
             });
         }
 
-        // Crear gráficos
-        crearGraficoPastel('graficoCzona', dataCzona, 'Tallos por Mercado', 'tallos');
-        crearGraficoPastel('graficoCliente', dataCliente, 'Tallos por Cliente', 'tallos');
-        crearGraficoPastel('graficoValorCzona', dataCzona, 'Valor USD por Mercado', 'valor');
-        crearGraficoPastel('graficoManifiesto', dataManifiesto, 'Tallos por DAE', 'tallos');
+        // Crear gráficos iniciales
+        actualizarOGenerarGrafico('graficoCzona', 'pie', dataCzona, 'Tallos por Mercado (CZONA)', 'tallos');
+        actualizarOGenerarGrafico('graficoCliente', 'pie', dataCliente, 'Tallos por Cliente', 'tallos');
+        actualizarOGenerarGrafico('graficoValorCzona', 'pie', dataCzona, 'Valor USD por Mercado (CZONA)', 'valor');
+        actualizarOGenerarGrafico('graficoManifiesto', 'pie', dataManifiesto, 'Tallos por DAE', 'tallos');
+
+        // Event listeners para los botones de tamaño de gráfico
+        document.querySelectorAll('.chart-size-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const targetCanvasId = this.dataset.target;
+                const newSize = this.dataset.size;
+                const chartContainer = document.getElementById(targetCanvasId).parentElement;
+
+                chartContainer.classList.remove('chart-size-small', 'chart-size-medium', 'chart-size-large');
+                chartContainer.classList.add(`chart-size-${newSize}`);
+
+                this.parentElement.querySelectorAll('.chart-size-btn').forEach(btn => btn.classList.remove('is-selected'));
+                this.classList.add('is-selected');
+            });
+        });
+
+        // Event listeners para los selectores de tipo de gráfico
+        document.querySelectorAll('.chart-type-select').forEach(select => {
+            select.addEventListener('change', function() {
+                const canvasId = this.dataset.target;
+                const newType = this.value;
+                let sourceData, titulo, campoY;
+
+                switch (canvasId) {
+                    case 'graficoCzona':
+                        sourceData = dataCzona;
+                        titulo = 'Tallos por Mercado (CZONA)';
+                        campoY = 'tallos';
+                        break;
+                    case 'graficoCliente':
+                        sourceData = dataCliente;
+                        titulo = 'Tallos por Cliente';
+                        campoY = 'tallos';
+                        break;
+                    case 'graficoValorCzona':
+                        sourceData = dataCzona; // Usa dataCzona pero para el campo 'valor'
+                        titulo = 'Valor USD por Mercado (CZONA)';
+                        campoY = 'valor';
+                        break;
+                    case 'graficoManifiesto':
+                        sourceData = dataManifiesto;
+                        titulo = 'Tallos por DAE';
+                        campoY = 'tallos';
+                        break;
+                }
+                actualizarOGenerarGrafico(canvasId, newType, sourceData, titulo, campoY);
+            });
+        });
 
         // Función para exportar PDF
         function exportarPDF() {
