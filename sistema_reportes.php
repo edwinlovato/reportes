@@ -94,7 +94,7 @@ $sql_count = str_replace("SELECT DATE_FORMAT(facturas.`Fecha_facturacion`,'%%d/%
     DATE_FORMAT(DATE_ADD(Fecha_facturacion,INTERVAL 1 DAY),'%d/%m/%Y') AS fecha_vuelo, 
     facturas.invoice, facturas.`NUM_PACK`, 
     CONCAT('CE',clientes.tar) AS cod_ventas, 
-    clientes.id_nif AS cod_contabilidad, 
+    '' AS cod_contabilidad, 
     clientes.`CCONSIGNA` AS cliente,
     clientes.`CNOMBRE` AS subcliente, 
     facturas.`tipoventa`, 
@@ -233,6 +233,26 @@ $grafico_manifiesto = generarGraficosData($db, $sql_base, $params, 'fue_manifies
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
+        #loading-indicator .spinner {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem; /* Space between spinner and text */
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #loading-indicator .loading-content { /* Container for centering spinner and text vertically */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
         .chart-container {
             position: relative;
             width: 100%; /* Ensure it takes full width of its parent box */
@@ -276,6 +296,12 @@ $grafico_manifiesto = generarGraficosData($db, $sql_base, $params, 'fue_manifies
 	
 </head>
 <body>
+    <div id="loading-indicator" class="is-hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.85); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p style="font-size: 1.5rem; color: #333;">Cargando datos, por favor espere...</p>
+        </div>
+    </div>
     <div class="container is-fluid">
         <div class="section">
             <h1 class="title">Sistema de Reportes de Facturas</h1>
@@ -696,7 +722,28 @@ $grafico_manifiesto = generarGraficosData($db, $sql_base, $params, 'fue_manifies
     </div>
 
     <script>
+        const loadingIndicator = document.getElementById('loading-indicator');
 
+        function showLoadingIndicator() {
+            if (loadingIndicator) {
+                loadingIndicator.classList.remove('is-hidden');
+            }
+        }
+
+        // Attach to the main filter form submission
+        // This form wraps all filters and the records-per-page dropdown
+        const filterForm = document.querySelector('div.box > form[method="POST"]'); 
+        if (filterForm) {
+            filterForm.addEventListener('submit', showLoadingIndicator);
+        }
+
+        // Attach to pagination forms
+        // There are two such forms, one for top pagination, one for bottom.
+        const paginationForms = document.querySelectorAll('nav.pagination form[method="POST"]');
+        paginationForms.forEach(form => {
+            form.addEventListener('submit', showLoadingIndicator);
+        });
+        
 		// Variables globales para los gráficos
         let charts = {
             czona: null,
@@ -735,8 +782,8 @@ $grafico_manifiesto = generarGraficosData($db, $sql_base, $params, 'fue_manifies
                     data: valores,
                     backgroundColor: chartColors, // Para pie, doughnut, bar
                     borderColor: chartColors[0], // Para line
-                    borderWidth: (chartType === 'line' || chartType === 'bar') ? 2 : 2, // Borde de dataset para line/bar, borde de segmento para pie/doughnut
-                    hoverBorderWidth: 3,
+                    borderWidth: (chartType === 'line' || chartType === 'bar') ? 2 : 1, // 1px for pie/doughnut, 2px for line/bar
+                    hoverBorderWidth: 3, // Keep hover distinct
                     hoverBorderColor: '#374151',
                     fill: chartType === 'line' ? false : true, // No rellenar área bajo la línea por defecto
                     tension: chartType === 'line' ? 0.1 : 0 // Curvatura de la línea
